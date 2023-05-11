@@ -1,4 +1,6 @@
 from flask import Flask, jsonify, request
+import json
+import requests
 
 # Creating a Flask app
 app = Flask(__name__)
@@ -16,12 +18,25 @@ def healthcheck():
 @app.route('/studio_handler', methods=['POST'])
 def studio_handler():
     if request.method == "POST":
-        pass
+        utterance = request.json["utterance"]
+        llm_selected = request.json["llm_selected"]
+        # do a post request to llm_service to fetch the required data and pass to the studio
+        url = "http://localhost:6999/llm_predict"
+
+        payload = json.dumps({
+            "utterance": utterance,
+            "llm_selected": llm_selected,
+        })
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        response = requests.request("POST", url, headers=headers, data=payload).json()
+        return response
 
 
 # driver function
 if __name__ == '__main__':
-    app.run(port=6999, debug=True)
+    app.run(port=5999, debug=True)
 
 # from app.adapter.inmemory_vote_repository import InMemoryVoteRepository
 # from app.domain.vote import Vote
