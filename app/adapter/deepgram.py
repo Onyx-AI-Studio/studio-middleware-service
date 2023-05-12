@@ -7,13 +7,15 @@ from flask import Flask, jsonify, request
 from deepgram import Deepgram
 
 
-def speech_to_text(conv_id: str, audio_file):
+def speech_to_text(conv_id: str, audio_file, stt_model: str):
     if request.method == 'POST':
         data = "This is a place holder for output from Deepgram"
+        stt_model = "whisper" if "whisper" in stt_model.lower() else "nova"
+        print(f'Selected speech-to-text model: {stt_model}')
 
         try:
             # Transcribe to text using Deepgram
-            response = asyncio.run(deepgram_stt(audio_file))
+            response = asyncio.run(deepgram_stt(audio_file, stt_model))
             verbatim, summaries = response["results"]["channels"][0]["alternatives"][0]["transcript"], \
                 response["results"]["channels"][0]["alternatives"][0]["summaries"]
 
@@ -32,7 +34,7 @@ def speech_to_text(conv_id: str, audio_file):
         return jsonify({'result': 'Something wrong with Deepgram API'})
 
 
-async def deepgram_stt(FILE: str):
+async def deepgram_stt(FILE: str, stt_model: str):
     # FILE = './audio_files/6min.mp3'
 
     MIMETYPE = 'audio/mp3'
@@ -52,15 +54,15 @@ async def deepgram_stt(FILE: str):
         deepgram.transcription.prerecorded(
             source,
             {
-                'punctuate': True,
-                'model': 'nova',
+                'model': stt_model,
                 'diarize': True,
                 'summarize': True,
+                'smart_format': True,
             }
         )
     )
 
-    print(f'Speech to text based on audio input: {json.dumps(response, indent=4)}')
+    # print(f'Speech to text based on audio input: {json.dumps(response, indent=4)}')
     # return response["results"]["channels"][0]["alternatives"][0]["transcript"]
     # return response["results"]["channels"][0]["alternatives"][0]["transcript"], \
     #     response["results"]["channels"][0]["alternatives"][0]["summaries"]
@@ -68,47 +70,47 @@ async def deepgram_stt(FILE: str):
 
 
 # NOT USED!
-def process_response(conversation_id: str):
-    dirname = "./audio_files/"
-    save_path = os.path.join(dirname, conversation_id + ".mp3")
-    request.files['audio_file'].save(save_path)
-
-    try:
-        # Transcribe to text using Deepgram
-        response = asyncio.run(deepgram_stt(save_path))
-        print(f'Speech to text based on audio input: {json.dumps(response, indent=2)}')
-
-        # Build transcript object using the speech to text response
-        idx = 0
-        transcript = []
-        temp = {'speaker': 0, 'utterance': "", 'fraudulent': False}
-        transcript.append(temp)
-
-        # TODO: isolate the following logic to build transcript based on conversation
-        words = response["results"]["channels"][0]["alternatives"][0]["words"]
-        for i in range(len(words)):
-            if i == 0:
-                continue
-
-            if words[i - 1]["speaker"] == words[i]["speaker"]:
-                # print(transcript)
-                transcript[idx]["utterance"] += words[i]["punctuated_word"] + " "
-            else:
-                idx += 1
-                temp = {
-                    'speaker': words[i]["speaker"],
-                    'utterance': words[i]["punctuated_word"] + " ",
-                    'fraudulent': False
-                }
-                transcript.append(temp)
-
-        return jsonify({
-            'response': response,
-            'transcript': transcript,
-        })
-    except Exception as e:
-        exception_type, exception_object, exception_traceback = sys.exc_info()
-        line_number = exception_traceback.tb_lineno
-        print(f'line {line_number}: {exception_type} - {e}')
-
-    return jsonify({'result': 'Something wrong with Deepgram API'})
+# def process_response(conversation_id: str):
+#     dirname = "./audio_files/"
+#     save_path = os.path.join(dirname, conversation_id + ".mp3")
+#     request.files['audio_file'].save(save_path)
+#
+#     try:
+#         # Transcribe to text using Deepgram
+#         response = asyncio.run(deepgram_stt(save_path))
+#         print(f'Speech to text based on audio input: {json.dumps(response, indent=2)}')
+#
+#         # Build transcript object using the speech to text response
+#         idx = 0
+#         transcript = []
+#         temp = {'speaker': 0, 'utterance': "", 'fraudulent': False}
+#         transcript.append(temp)
+#
+#         # TODO: isolate the following logic to build transcript based on conversation
+#         words = response["results"]["channels"][0]["alternatives"][0]["words"]
+#         for i in range(len(words)):
+#             if i == 0:
+#                 continue
+#
+#             if words[i - 1]["speaker"] == words[i]["speaker"]:
+#                 # print(transcript)
+#                 transcript[idx]["utterance"] += words[i]["punctuated_word"] + " "
+#             else:
+#                 idx += 1
+#                 temp = {
+#                     'speaker': words[i]["speaker"],
+#                     'utterance': words[i]["punctuated_word"] + " ",
+#                     'fraudulent': False
+#                 }
+#                 transcript.append(temp)
+#
+#         return jsonify({
+#             'response': response,
+#             'transcript': transcript,
+#         })
+#     except Exception as e:
+#         exception_type, exception_object, exception_traceback = sys.exc_info()
+#         line_number = exception_traceback.tb_lineno
+#         print(f'line {line_number}: {exception_type} - {e}')
+#
+#     return jsonify({'result': 'Something wrong with Deepgram API'})

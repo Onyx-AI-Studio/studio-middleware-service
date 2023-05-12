@@ -43,6 +43,7 @@ def studio_handler():
 def stt():
     conv_id = request.json["conversation_id"]
     s3_audio_file_path = str(request.json["s3_audio_file_path"])
+    stt_model = str(request.json["stt_model"])
 
     save_folder = '/Users/snehalyelmati/Documents/studio-middleware-service/audio_files'
     save_path = Path(save_folder, conv_id)
@@ -60,8 +61,8 @@ def stt():
     # TODO: set the speech to text engine based on the "stt_model" selected
     # if "Deepgram" in request.json['stt_model']:
     stt_engine = deepgram
-    deepgram_response = stt_engine.speech_to_text(conv_id, str(Path(save_path, filename)))
-    print(deepgram_response)
+    deepgram_response = stt_engine.speech_to_text(conv_id, str(Path(save_path, filename)), stt_model)
+    # print(deepgram_response)
     return deepgram_response
 
 
