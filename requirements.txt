@@ -1,3 +1,6 @@
 flask
 requests
 urllib3==1.26.15
+deepgram-sdk
+awscli
+boto3

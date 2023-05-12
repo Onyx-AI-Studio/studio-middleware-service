@@ -1,6 +1,11 @@
 from flask import Flask, jsonify, request
 import json
+import os
 import requests
+from pathlib import Path
+
+import app.adapter.deepgram as deepgram
+import boto3
 
 # Creating a Flask app
 app = Flask(__name__)
@@ -34,25 +39,32 @@ def studio_handler():
         return response
 
 
+@app.route('/stt', methods=['POST'])
+def stt():
+    conv_id = request.json["conversation_id"]
+    s3_audio_file_path = str(request.json["s3_audio_file_path"])
+
+    save_folder = '/Users/snehalyelmati/Documents/studio-middleware-service/audio_files'
+    save_path = Path(save_folder, conv_id)
+    print(f'save_path: {save_path}')
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    filename = '_'.join(s3_audio_file_path.split('/')[-1].split('_')[1:])
+    print(f'filename: {filename}')
+
+    s3 = boto3.client("s3")
+    s3.download_file('onyx-test-001', s3_audio_file_path, Path(save_path, filename))
+    print(f'File downloaded from S3!')
+
+    # TODO: set the speech to text engine based on the "stt_model" selected
+    # if "Deepgram" in request.json['stt_model']:
+    stt_engine = deepgram
+    deepgram_response = stt_engine.speech_to_text(conv_id, str(Path(save_path, filename)))
+    print(deepgram_response)
+    return deepgram_response
+
+
 # driver function
 if __name__ == '__main__':
     app.run(port=5999, debug=True)
-
-# from app.adapter.inmemory_vote_repository import InMemoryVoteRepository
-# from app.domain.vote import Vote
-#
-# from fastapi import FastAPI
-#
-# app = FastAPI()
-#
-# vote_repository = InMemoryVoteRepository()
-#
-#
-# @app.post("/vote", response_model=Vote)
-# def vote() -> Vote:
-#     return Vote().save(vote_repository)
-#
-#
-# @app.get("/votes", response_model=int)
-# def votes() -> int:
-#     return vote_repository.total()
