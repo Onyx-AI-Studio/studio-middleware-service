@@ -58,12 +58,16 @@ def stt():
     s3.download_file('onyx-test-001', s3_audio_file_path, Path(save_path, filename))
     print(f'File downloaded from S3!')
 
-    # TODO: set the speech to text engine based on the "stt_model" selected
-    # if "Deepgram" in request.json['stt_model']:
     stt_engine = deepgram
     deepgram_response = stt_engine.speech_to_text(conv_id, str(Path(save_path, filename)), stt_model)
-    # print(deepgram_response)
     return deepgram_response
+
+
+@app.route('/deepgram_healthcheck', methods=['GET'])
+def deepgram_healthcheck():
+    # response = await deepgram.projects.list()
+    # return True if response.status_code == 200 else False
+    return jsonify({'status': "True" if deepgram.healthcheck() else "False"})
 
 
 # driver function

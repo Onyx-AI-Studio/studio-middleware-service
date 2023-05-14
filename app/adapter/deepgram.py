@@ -114,3 +114,8 @@ async def deepgram_stt(FILE: str, stt_model: str):
 #         print(f'line {line_number}: {exception_type} - {e}')
 #
 #     return jsonify({'result': 'Something wrong with Deepgram API'})
+
+
+# TODO: implement healthcheck for Deepgram
+def healthcheck():
+    return True
