@@ -44,6 +44,7 @@ def stt():
     conv_id = request.json["conversation_id"]
     s3_audio_file_path = str(request.json["s3_audio_file_path"])
     stt_model = str(request.json["stt_model"])
+    stt_features = request.json["stt_features"]
 
     save_folder = '/Users/snehalyelmati/Documents/studio-middleware-service/audio_files'
     save_path = Path(save_folder, conv_id)
@@ -59,7 +60,7 @@ def stt():
     print(f'File downloaded from S3!')
 
     stt_engine = deepgram
-    deepgram_response = stt_engine.speech_to_text(conv_id, str(Path(save_path, filename)), stt_model)
+    deepgram_response = stt_engine.speech_to_text(conv_id, str(Path(save_path, filename)), stt_model, stt_features)
     return deepgram_response
 
 

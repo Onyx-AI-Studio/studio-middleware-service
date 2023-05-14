@@ -7,24 +7,37 @@ from flask import Flask, jsonify, request
 from deepgram import Deepgram
 
 
-def speech_to_text(conv_id: str, audio_file, stt_model: str):
+def speech_to_text(conv_id: str, audio_file, stt_model: str, stt_features: []):
     if request.method == 'POST':
         data = "This is a place holder for output from Deepgram"
-        stt_model = "whisper" if "whisper" in stt_model.lower() else "nova"
+        stt_model = "whisper-medium" if "whisper" in stt_model.lower() else "nova"
         print(f'Selected speech-to-text model: {stt_model}')
+        print(f'STT features selected: {stt_features}')
+
+        # build parameters based on the user inputs
+        parameters = {
+            'stt_model': stt_model,
+        }
+
+        for f in stt_features:
+            temp = str(f).lower().replace(" ", "_")
+            parameters[temp] = True
+        print(f'Parameters for Deepgram request: {parameters}')
 
         try:
             # Transcribe to text using Deepgram
-            response = asyncio.run(deepgram_stt(audio_file, stt_model))
-            verbatim, summaries = response["results"]["channels"][0]["alternatives"][0]["transcript"], \
-                response["results"]["channels"][0]["alternatives"][0]["summaries"]
+            response = asyncio.run(deepgram_stt(audio_file, parameters))
+            verbatim = response["results"]["channels"][0]["alternatives"][0]["transcript"]
 
-            return jsonify(
-                {
-                    'verbatim': verbatim,
-                    'summaries': summaries
-                }
-            )
+            final_response = {
+                'verbatim': verbatim,
+            }
+
+            if "summarize" in parameters:
+                summaries = response["results"]["channels"][0]["alternatives"][0]["summaries"]
+                final_response['summaries'] = summaries
+
+            return jsonify(final_response)
 
         except Exception as e:
             exception_type, exception_object, exception_traceback = sys.exc_info()
@@ -34,7 +47,7 @@ def speech_to_text(conv_id: str, audio_file, stt_model: str):
         return jsonify({'result': 'Something wrong with Deepgram API'})
 
 
-async def deepgram_stt(FILE: str, stt_model: str):
+async def deepgram_stt(FILE: str, parameters: dict):
     # FILE = './audio_files/6min.mp3'
 
     MIMETYPE = 'audio/mp3'
@@ -53,12 +66,7 @@ async def deepgram_stt(FILE: str, stt_model: str):
     response = await asyncio.create_task(
         deepgram.transcription.prerecorded(
             source,
-            {
-                'model': stt_model,
-                'diarize': True,
-                'summarize': True,
-                'smart_format': True,
-            }
+            options=parameters,
         )
     )
 
