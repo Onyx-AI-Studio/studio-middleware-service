@@ -7,7 +7,7 @@ from flask import Flask, jsonify, request
 from deepgram import Deepgram
 
 
-def speech_to_text(conv_id: str, audio_file, stt_model: str, stt_features: []):
+def speech_to_text(conv_id: str, audio_file, stt_model: str, stt_features: list):
     if request.method == 'POST':
         data = "This is a place holder for output from Deepgram"
         stt_model = "whisper-medium" if "whisper" in stt_model.lower() else "nova"
@@ -19,6 +19,9 @@ def speech_to_text(conv_id: str, audio_file, stt_model: str, stt_features: []):
             'stt_model': stt_model,
         }
 
+        if 'diarize' in stt_features and 'punctuate' not in stt_features:
+            stt_features.append('punctuate')
+
         for f in stt_features:
             temp = str(f).lower().replace(" ", "_")
             parameters[temp] = True
@@ -27,6 +30,7 @@ def speech_to_text(conv_id: str, audio_file, stt_model: str, stt_features: []):
         try:
             # Transcribe to text using Deepgram
             response = asyncio.run(deepgram_stt(audio_file, parameters))
+            # return response
             verbatim = response["results"]["channels"][0]["alternatives"][0]["transcript"]
 
             final_response = {
@@ -36,6 +40,35 @@ def speech_to_text(conv_id: str, audio_file, stt_model: str, stt_features: []):
             if "summarize" in parameters:
                 summaries = response["results"]["channels"][0]["alternatives"][0]["summaries"]
                 final_response['summaries'] = summaries
+
+            if "diarize" in parameters:
+                # Build transcript object using the speech to text response
+                idx = 0
+                transcript = []
+                temp = {'speaker': 0, 'utterance': ""}
+                transcript.append(temp)
+
+                words = response["results"]["channels"][0]["alternatives"][0]["words"]
+                for i in range(len(words)):
+                    if i == 0:
+                        continue
+
+                    if words[i - 1]["speaker"] == words[i]["speaker"]:
+                        # print(transcript)
+                        transcript[idx]["utterance"] += words[i]["punctuated_word"] + " "
+                    else:
+                        idx += 1
+                        temp = {
+                            'speaker': words[i]["speaker"],
+                            'utterance': words[i]["punctuated_word"] + " ",
+                        }
+                        transcript.append(temp)
+
+                transcript_string = ""
+                for t in transcript:
+                    transcript_string += f"Speaker {t['speaker'] + 1}: {t['utterance']}\n\n"
+
+                final_response['transcript'] = transcript_string
 
             return jsonify(final_response)
 
