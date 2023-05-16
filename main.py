@@ -3,6 +3,7 @@ import json
 import os
 import requests
 from pathlib import Path
+import time
 
 import app.adapter.deepgram as deepgram
 import boto3
@@ -60,7 +61,13 @@ def stt():
     print(f'File downloaded from S3!')
 
     stt_engine = deepgram
+
+    t0 = time.time()
     deepgram_response = stt_engine.speech_to_text(conv_id, str(Path(save_path, filename)), stt_model, stt_features)
+    t1 = time.time()
+    total = t1 - t0
+    print(f'Time taken to get response from Deepgram: {total}')
+
     return deepgram_response
 
 
