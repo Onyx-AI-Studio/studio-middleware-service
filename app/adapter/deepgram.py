@@ -10,7 +10,7 @@ from deepgram import Deepgram
 def speech_to_text(conv_id: str, audio_file, stt_model: str, stt_features: list):
     if request.method == 'POST':
         data = "This is a place holder for output from Deepgram"
-        stt_model = "whisper-medium" if "whisper" in stt_model.lower() else "nova"
+        stt_model = "whisper-large" if "whisper" in stt_model.lower() else "nova"
         print(f'Selected speech-to-text model: {stt_model}')
         print(f'STT features selected: {stt_features}')
 
@@ -51,6 +51,7 @@ def speech_to_text(conv_id: str, audio_file, stt_model: str, stt_features: list)
                 words = response["results"]["channels"][0]["alternatives"][0]["words"]
                 for i in range(len(words)):
                     if i == 0:
+                        transcript[idx]["utterance"] += words[i]["punctuated_word"] + " "
                         continue
 
                     if words[i - 1]["speaker"] == words[i]["speaker"]:
