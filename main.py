@@ -11,6 +11,8 @@ import boto3
 # Creating a Flask app
 app = Flask(__name__)
 
+LLM_URL = "http://localhost:6999"
+
 
 # To check the if the API is up
 @app.route('/healthcheck', methods=['GET'])
@@ -27,7 +29,7 @@ def studio_handler():
         utterance = request.json["utterance"]
         llm_selected = request.json["llm_selected"]
         # do a post request to llm_service to fetch the required data and pass to the studio
-        url = "http://localhost:6999/llm_predict"
+        url = LLM_URL + "/llm_predict"
 
         payload = json.dumps({
             "utterance": utterance,
@@ -76,6 +78,25 @@ def deepgram_healthcheck():
     # response = await deepgram.projects.list()
     # return True if response.status_code == 200 else False
     return jsonify({'status': "True" if deepgram.healthcheck() else "False"})
+
+
+@app.route('/build_indices', methods=['POST'])
+def build_indices():
+    if request.method == "POST":
+        s3_file_path = request.json["s3_file_path"]
+        conv_id = request.json["conversation_id"]
+        # do a post request to llm_service to fetch the required data and pass to the studio
+        url = LLM_URL + "/build_indices"
+
+        payload = json.dumps({
+            "s3_file_path": s3_file_path,
+            "conversation_id": conv_id,
+        })
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        response = requests.request("POST", url, headers=headers, data=payload).json()
+        return response
 
 
 # driver function
