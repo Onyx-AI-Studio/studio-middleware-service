@@ -99,6 +99,27 @@ def build_indices():
         return response
 
 
+@app.route('/get_answer_from_pdf', methods=['POST'])
+def get_answer_from_pdf():
+    if request.method == "POST":
+        conv_id = request.json["conversation_id"]
+        query = request.json["query"]
+        llm_selected = request.json["llm_selected"]
+        # do a post request to llm_service to fetch the required data and pass to the studio
+        url = LLM_URL + "/get_answer_from_pdf"
+
+        payload = json.dumps({
+            "conversation_id": conv_id,
+            "query": query,
+            "llm_selected": llm_selected,
+        })
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        response = requests.request("POST", url, headers=headers, data=payload).json()
+        return response
+
+
 # driver function
 if __name__ == '__main__':
     app.run(port=5999, debug=True)
